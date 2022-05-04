@@ -17,6 +17,10 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const name = file.originalname.split(" ").join("_");
     const extension = MIME_TYPES[file.mimetype];
+    //Checks if extension is allowed
+    if (extension === undefined) {
+      return cb(new Error("Extension non valide"));
+    }
     cb(null, name + Date.now() + "." + extension);
   },
 });

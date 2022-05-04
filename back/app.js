@@ -35,7 +35,7 @@ app.use((req, res, next) => {
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 //Users routes
-app.use('/api/auth', require('./routes/user'));
-app.use('/api/sauces', require ('./routes/sauces'));
+app.use("/api/auth", require("./routes/user"));
+app.use("/api/sauces", require("./routes/sauces"));
 
 module.exports = app;
