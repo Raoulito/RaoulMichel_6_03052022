@@ -1,8 +1,10 @@
 const Sauce = require("../models/Sauce");
 const fs = require("fs");
+const sanitize = require ("mongo-sanitize");
 
 //Get a sauce by id
 exports.getOneSauce = (req, res) => {
+  req.params.id = sanitize(req.params.id);
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
       if (!sauce) {
@@ -15,7 +17,8 @@ exports.getOneSauce = (req, res) => {
 
 //Creates a new sauce and uploads the image and initializes the likes and dislikes
 exports.createSauce = (req, res) => {
-  const sauceObject = JSON.parse(req.body.sauce); //Shit front sending sauce as a string
+  req.body.sauce = sanitize(req.body.sauce);
+  const sauceObject = JSON.parse(req.body.sauce); //Front sending sauce as a string so parsing it
   delete sauceObject._id;
   const sauce = new Sauce({
     ...sauceObject,
@@ -38,6 +41,7 @@ exports.createSauce = (req, res) => {
 //Updates a sauce
 exports.updateOneSauce = (req, res) => {
   if (req.file) {
+    req.params.id = sanitize(req.params.id);
     Sauce.findOne({ _id: req.params.id })
       .then((sauce) => {
         if (!sauce) {
@@ -63,6 +67,7 @@ exports.updateOneSauce = (req, res) => {
       })
       .catch((error) => res.status(500).json({ error }));
   } else {
+    req.body = sanitize(req.body);
     const sauceObject = { ...req.body };
     Sauce.updateOne(
       { _id: req.params.id },
@@ -75,6 +80,7 @@ exports.updateOneSauce = (req, res) => {
 
 //Deletes a sauce
 exports.deleteSauce = (req, res) => {
+  req.params.id = sanitize(req.params.id);
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
       if (!sauce) {
@@ -102,15 +108,14 @@ exports.getAllSauces = (req, res) => {
     .catch((error) => res.status(500).json({ error }));
 };
 
-//Définit le statut « Like » pour l' userId fourni. Si like = 1, l'utilisateur like la sauce. Si like = 0, l'utilisateur annule son like ou son dislike. Si like = -1,l'utilisateur n'aime pas (=
-// dislike) la sauce. L'ID de l'utilisateur doit être ajouté ou retiré du tableau approprié. Cela permet de garder une trace de leurs préférences et les empêche de liker ou de ne pas disliker
-//la même sauce plusieurs fois : un utilisateur ne peut avoir qu'une seule valeur pour chaque sauce. Le nombre total de « Like » et de « Dislike » est mis à jour à chaque nouvelle notation.
+//(dis)likes
 exports.likeSauce = (req, res) => {
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
       if (!sauce) {
         return res.status(404).json({ message: "Sauce non trouvée !" });
       }
+      //If user has already liked or disliked the sauce
       if (sauce.usersLiked.includes(req.body.userId)) {
         sauce.usersLiked.splice(sauce.usersLiked.indexOf(req.body.userId), 1);
         sauce.likes--;
@@ -122,6 +127,7 @@ exports.likeSauce = (req, res) => {
         );
         sauce.dislikes--;
       }
+      //If user has not yet liked or disliked the sauce
       if (req.body.like === 1) {
         sauce.usersLiked.push(req.body.userId);
         sauce.likes++;
